@@ -877,7 +877,7 @@ def main():
                 self.send_response(200)
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
-                self.wfile.write(b'✅ Bot is active! Use on Telegram.')
+                self.wfile.write(b'Bot is active! Use on Telegram.')
             else:
                 # Let Telegram webhook handle other paths
                 self.send_response(404)
