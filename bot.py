@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import requests
 import qrcode
 from io import BytesIO
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
@@ -863,13 +865,6 @@ def main():
     
     # Add error handler
     application.add_error_handler(error_handler)
-    
-    def main():
-    # ... your existing bot setup code ...
-    
-    # Add simple HTTP server for Render URL
-    from http.server import HTTPServer, BaseHTTPRequestHandler
-    import threading
     
     class SimpleHandler(BaseHTTPRequestHandler):
         def do_GET(self):
