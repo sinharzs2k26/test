@@ -866,77 +866,37 @@ def main():
     # Add error handler
     application.add_error_handler(error_handler)
     
-    # ========== ADD THIS SECTION ==========
-    # Simple HTTP server for Render URL (no extra dependencies needed)
+    # ALWAYS use polling (works with health server)
+    logger.info("💻 Running with polling + health server")
+    
+    # Start health server (Option 3 from before)
     from http.server import HTTPServer, BaseHTTPRequestHandler
     import threading
     
     class SimpleHandler(BaseHTTPRequestHandler):
         def do_GET(self):
-            if self.path == '/':  # Only respond to root path
-                self.send_response(200)
-                self.send_header('Content-type', 'text/plain')
-                self.end_headers()
-                self.wfile.write(b'Bot is active! Use on Telegram.')
-            else:
-                # Let Telegram webhook handle other paths
-                self.send_response(404)
-                self.end_headers()
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'✅ Bot is active!')
         
         def log_message(self, format, *args):
-            pass  # Disable access logging
+            pass
     
-    def run_simple_server():
-        port = int(os.environ.get('PORT_2', 10001))
+    def run_health_server():
+        port = int(os.environ.get('PORT', 10000))
         httpd = HTTPServer(('0.0.0.0', port), SimpleHandler)
-        logger.info(f"✅ Health check server active on port {port}")
+        logger.info(f"✅ Health server on port {port}")
         httpd.serve_forever()
     
-    # Start health server in background thread
-    server_thread = threading.Thread(target=run_simple_server, daemon=True)
+    server_thread = threading.Thread(target=run_health_server, daemon=True)
     server_thread.start()
-    # ========== END OF ADDED SECTION ==========
     
-    # Start the bot
-    logger.info("🤖 URL Shortener Bot starting...")
-    
-    # Check if running on Render
-    is_render = 'RENDER' in os.environ
-    
-    if is_render:
-        # Use webhook for Render
-        logger.info("🚀 Running in Render mode (webhook)")
-        port = int(os.environ.get('PORT_1', 10000))
-        
-        # Get webhook URL
-        webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
-        if webhook_url:
-            # Set webhook URL with token
-            webhook_url = f"{webhook_url}/{TOKEN}"
-            logger.info(f"🌐 Webhook URL: {webhook_url}")
-            
-            # Start webhook
-            application.run_webhook(
-                listen="0.0.0.0",
-                port=port,
-                url_path=TOKEN,
-                webhook_url=webhook_url,
-                drop_pending_updates=True,
-                allowed_updates=Update.ALL_TYPES
-            )
-        else:
-            logger.warning("⚠️ No RENDER_EXTERNAL_URL found, falling back to polling")
-            application.run_polling(
-                drop_pending_updates=True,
-                allowed_updates=Update.ALL_TYPES
-            )
-    else:
-        # Use polling for local development
-        logger.info("💻 Running in local mode (polling)")
-        application.run_polling(
-            drop_pending_updates=True,
-            allowed_updates=Update.ALL_TYPES
-        )
+    # Start bot with polling
+    application.run_polling(
+        drop_pending_updates=True,
+        allowed_updates=Update.ALL_TYPES
+    )
 
 if __name__ == '__main__':
     main()
