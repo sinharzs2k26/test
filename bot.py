@@ -866,25 +866,36 @@ def main():
     # Add error handler
     application.add_error_handler(error_handler)
     
+    # ========== ADD THIS SECTION ==========
+    # Simple HTTP server for Render URL (no extra dependencies needed)
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    import threading
+    
     class SimpleHandler(BaseHTTPRequestHandler):
         def do_GET(self):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b'Bot is running! Use on Telegram.')
+            if self.path == '/':  # Only respond to root path
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(b'✅ Bot is active! Use on Telegram.')
+            else:
+                # Let Telegram webhook handle other paths
+                self.send_response(404)
+                self.end_headers()
         
         def log_message(self, format, *args):
-            pass  # Disable logging
+            pass  # Disable access logging
     
     def run_simple_server():
         port = int(os.environ.get('PORT', 10000))
         httpd = HTTPServer(('0.0.0.0', port), SimpleHandler)
-        logger.info(f"✅ Web server active on port {port}")
+        logger.info(f"✅ Health check server active on port {port}")
         httpd.serve_forever()
     
-    # Start server in background
+    # Start health server in background thread
     server_thread = threading.Thread(target=run_simple_server, daemon=True)
     server_thread.start()
+    # ========== END OF ADDED SECTION ==========
     
     # Start the bot
     logger.info("🤖 URL Shortener Bot starting...")
