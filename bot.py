@@ -887,7 +887,7 @@ def main():
             pass  # Disable access logging
     
     def run_simple_server():
-        port = int(os.environ.get('PORT', 10000))
+        port = int(os.environ.get('PORT_2', 10001))
         httpd = HTTPServer(('0.0.0.0', port), SimpleHandler)
         logger.info(f"✅ Health check server active on port {port}")
         httpd.serve_forever()
@@ -906,7 +906,7 @@ def main():
     if is_render:
         # Use webhook for Render
         logger.info("🚀 Running in Render mode (webhook)")
-        port = int(os.environ.get('PORT', 10000))
+        port = int(os.environ.get('PORT_1', 10000))
         
         # Get webhook URL
         webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
