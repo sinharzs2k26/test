@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 import requests
 import qrcode
 from io import BytesIO
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
+import asyncio
+from aiohttp import web
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
@@ -866,37 +866,45 @@ def main():
     # Add error handler
     application.add_error_handler(error_handler)
     
-    # ALWAYS use polling (works with health server)
-    logger.info("💻 Running with polling + health server")
+    async def health_check(request):
+        """Health check endpoint - shows when visiting Render URL"""
+        return web.Response(
+            text="✅ Bot is running! Use @YourBotName on Telegram.",
+            content_type='text/plain'
+        )
     
-    # Start health server (Option 3 from before)
-    from http.server import HTTPServer, BaseHTTPRequestHandler
-    import threading
-    
-    class SimpleHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b'Bot is active!')
+    async def run_bot_and_server():
+        """Run both health server and Telegram bot together"""
+        # Start health server
+        health_app = web.Application()
+        health_app.router.add_get('/', health_check)
+        health_app.router.add_get('/health', health_check)
         
-        def log_message(self, format, *args):
-            pass
-    
-    def run_health_server():
+        runner = web.AppRunner(health_app)
+        await runner.setup()
+        
         port = int(os.environ.get('PORT', 10000))
-        httpd = HTTPServer(('0.0.0.0', port), SimpleHandler)
-        logger.info(f"✅ Health server on port {port}")
-        httpd.serve_forever()
+        site = web.TCPSite(runner, '0.0.0.0', port)
+        await site.start()
+        logger.info(f"✅ Health server running on port {port}")
+        
+        # Start the Telegram bot
+        await application.initialize()
+        await application.start()
+        
+        logger.info("🤖 Bot is running and ready!")
+        
+        # Run forever
+        await asyncio.Event().wait()
     
-    server_thread = threading.Thread(target=run_health_server, daemon=True)
-    server_thread.start()
-    
-    # Start bot with polling
-    application.run_polling(
-        drop_pending_updates=True,
-        allowed_updates=Update.ALL_TYPES
-    )
+    # Start everything
+    try:
+        logger.info("🚀 Starting bot with health server...")
+        asyncio.run(run_bot_and_server())
+    except KeyboardInterrupt:
+        logger.info("👋 Bot stopped by user")
+    except Exception as e:
+        logger.error(f"❌ Failed to start: {e}")
 
 if __name__ == '__main__':
     main()
