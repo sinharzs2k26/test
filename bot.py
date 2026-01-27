@@ -1,8 +1,6 @@
 import os
-import asyncio
-import socket
-import time
-from threading import Thread
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -20,30 +18,30 @@ def main():
     
     # Add command handler
     application.add_handler(CommandHandler("start", start_command))
-  
-    # Add this at the top of your main function
-    def bind_to_port():
-        """Bind to Render's required port (for web services)"""
-        port = int(os.environ.get("PORT", 10000))
-        
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('0.0.0.0', port))
-            s.listen(1)
-            print(f"✅ Port {port} bound successfully")
-            
-            # Keep the socket open
-            while True:
-                time.sleep(60)
     
-    # Start port binding in a separate thread
-    port_thread = Thread(target=bind_to_port, daemon=True)
-    port_thread.start()
-
-    # Then start your bot
-    application.run_polling(
-        drop_pending_updates=True,
-        allowed_updates=Update.ALL_TYPES
-    )
+    class HealthHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'Bot is alive!')
+        
+        def log_message(self, format, *args):
+            pass  # Silence logs
+    
+    def run_health_server():
+        port = int(os.environ.get("PORT", 8080))
+        server = HTTPServer(('0.0.0.0', port), HealthHandler)
+        print(f"✅ Health server on port {port}")
+        server.serve_forever()
+    
+    # Start health server
+    health_thread = threading.Thread(target=run_health_server, daemon=True)
+    health_thread.start()
+    
+    # Start the bot
+    print("Bot is starting...")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
     main()
