@@ -17,6 +17,9 @@ def main():
     # Add command handler
     application.add_handler(CommandHandler("start", start_command))
     
+    # Check if running on Render
+    is_render = 'RENDER' in os.environ
+
     # Start the bot with webhook
     if is_render:
         # Use webhook for Render
