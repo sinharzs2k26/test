@@ -40,7 +40,6 @@ def main():
     port_thread.start()
 
     # Then start your bot
-    logger.info("STYLISH NAME BOT IS STARTING...")
     application.run_polling(
         drop_pending_updates=True,
         allowed_updates=Update.ALL_TYPES
