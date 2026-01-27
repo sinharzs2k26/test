@@ -1,7 +1,8 @@
 import os
-import threading
-import http.server
-import socketserver
+import asyncio
+import socket
+import time
+from threading import Thread
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -19,42 +20,31 @@ def main():
     
     # Add command handler
     application.add_handler(CommandHandler("start", start_command))
-    
-    # Check if running on Render
-    is_render = 'RENDER' in os.environ
-
-    if is_render:
-        port = int(os.environ.get('PORT', 10000))
-        webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
+  
+    # Add this at the top of your main function
+    def bind_to_port():
+        """Bind to Render's required port (for web services)"""
+        port = int(os.environ.get("PORT", 10000))
         
-        if webhook_url:
-            webhook_url = f"{webhook_url}/{TOKEN}"
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('0.0.0.0', port))
+            s.listen(1)
+            print(f"✅ Port {port} bound successfully")
             
-            # ====== ADD THIS: Set up simple response handler ======
-            class DualHandler(http.server.BaseHTTPRequestHandler):
-                def do_GET(self):
-                    if self.path == '/':
-                        self.send_response(200)
-                        self.send_header('Content-type', 'text/plain')
-                        self.end_headers()
-                        self.wfile.write(b'Bot is active!')
-                    else:
-                        self.send_response(404)
-                        self.end_headers()
-                
-                def log_message(self, format, *args):
-                    pass
-            
-            def run_health_server():
-                with socketserver.TCPServer(("0.0.0.0", port), DualHandler) as httpd:
-                    httpd.serve_forever()
-            
-            # Start in separate thread
-            server_thread = threading.Thread(target=run_health_server, daemon=True)
-            server_thread.start()
-            # ====== END OF ADDITION ======
-            
-            # Start bot (it will fail to bind to port - so DON'T use this approach)
-            # application.run_webhook(...)  # This will fail!
+            # Keep the socket open
+            while True:
+                time.sleep(60)
+    
+    # Start port binding in a separate thread
+    port_thread = Thread(target=bind_to_port, daemon=True)
+    port_thread.start()
+
+    # Then start your bot
+    logger.info("STYLISH NAME BOT IS STARTING...")
+    application.run_polling(
+        drop_pending_updates=True,
+        allowed_updates=Update.ALL_TYPES
+    )
+
 if __name__ == "__main__":
     main()
