@@ -37,7 +37,7 @@ def main():
                         self.send_response(200)
                         self.send_header('Content-type', 'text/plain')
                         self.end_headers()
-                        self.wfile.write(b'✅ Bot is active!')
+                        self.wfile.write(b'Bot is active!')
                     else:
                         self.send_response(404)
                         self.end_headers()
@@ -47,7 +47,6 @@ def main():
             
             def run_health_server():
                 with socketserver.TCPServer(("0.0.0.0", port), DualHandler) as httpd:
-                    logger.info(f"✅ Serving on port {port}")
                     httpd.serve_forever()
             
             # Start in separate thread
