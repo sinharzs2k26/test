@@ -15,7 +15,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(b'Bot is active! Use @@locdev26_bot on Telegram.')
+        self.wfile.write(b'Bot is active! Use @locdev26_bot on Telegram.')
     
     def log_message(self, format, *args):
         # Disable logging
@@ -23,7 +23,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 def start_health_server():
     """Start a simple HTTP server for health checks"""
-    port = int(os.environ.get('PORT', 10000))
+    port = int(os.getenv('PORT', 10000))
     server = HTTPServer(('0.0.0.0', port), HealthHandler)
     logger.info(f"🌐 Health server started on port {port}")
     server.serve_forever()
@@ -49,7 +49,7 @@ def main():
     if is_render:
         # Use webhook for Render
         logger.info("🚀 Running in Render mode (webhook)")
-        port = int(os.environ.get('PORT', 10000))
+        port = int(os.getenv('PORT', 10000))
         
         # Get webhook URL
         webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
