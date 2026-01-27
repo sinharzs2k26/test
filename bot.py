@@ -23,7 +23,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 def start_health_server():
     """Start a simple HTTP server for health checks"""
-    port = int(os.getenv('PORT', 10000))
+    port = int(os.getenv('PORT_1', 10000))
     server = HTTPServer(('0.0.0.0', port), HealthHandler)
     server.serve_forever()
     
@@ -45,7 +45,7 @@ def main():
     
     if is_render:
         # Use webhook for Render
-        port = int(os.getenv('PORT', 10000))
+        port = int(os.getenv('PORT_2', 10001))
         
         # Get webhook URL
         webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
