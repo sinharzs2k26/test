@@ -9,7 +9,7 @@ import requests
 import qrcode
 from io import BytesIO
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, Callback context, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, CallbackContext, filters
 
 # Load environment variables
 load_dotenv()
