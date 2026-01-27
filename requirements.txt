@@ -1,5 +1,1 @@
-python-telegram-bot[webhooks]
-python-dotenv
-requests
-qrcode
-aiohttp
+python-telegram-bot
