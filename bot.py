@@ -9,7 +9,7 @@ import requests
 import qrcode
 from io import BytesIO
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters, CallbackContext
 
 # Load environment variables
 load_dotenv()
@@ -863,27 +863,37 @@ def main():
     
     # Add error handler
     application.add_error_handler(error_handler)
-    
-    from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
 
-class HealthHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(b'Bot is active! Use @YourBotName on Telegram.')
+    # Start the bot with webhook
+    logger.info("🤖 URL Shortener Bot starting...")
     
-    def log_message(self, format, *args):
-        # Disable logging
-        pass
-
-def start_health_server():
-    """Start a simple HTTP server for health checks"""
-    port = int(os.environ.get('PORT', 10000))
-    server = HTTPServer(('0.0.0.0', port), HealthHandler)
-    logger.info(f"🌐 Health server started on port {port}")
-    server.serve_forever()
+    if is_render:
+        # Use webhook for Render
+        logger.info("🚀 Running in Render mode (webhook)")
+        port = int(os.environ.get('PORT', 10000))
+        
+        # Get webhook URL
+        webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
+        if webhook_url:
+            webhook_url = f"{webhook_url}/{TOKEN}"
+            logger.info(f"🌐 Webhook URL: {webhook_url}")
+            
+            # Set custom handler for root path
+            async def health_check(update: Update, context: CallbackContext):
+                """Handle requests to root path"""
+                await update.message.reply_text("✅ Bot is running!")
+            
+            # Add a special handler for root path messages (not really needed)
+            
+            # Start webhook
+            application.run_webhook(
+                listen="0.0.0.0",
+                port=port,
+                url_path=TOKEN,  # Webhook listens on /TOKEN path
+                webhook_url=webhook_url,
+                drop_pending_updates=True,
+                allowed_updates=Update.ALL_TYPES
+            )
 
 if __name__ == '__main__':
     main()
