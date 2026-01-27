@@ -889,7 +889,7 @@ def main():
                         self.send_response(200)
                         self.send_header('Content-type', 'text/plain')
                         self.end_headers()
-                        self.wfile.write(b'✅ Bot is active!')
+                        self.wfile.write(b'Bot is active!')
                     else:
                         self.send_response(404)
                         self.end_headers()
