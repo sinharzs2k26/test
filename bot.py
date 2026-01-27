@@ -8,8 +8,6 @@ from dotenv import load_dotenv
 import requests
 import qrcode
 from io import BytesIO
-import asyncio
-from aiohttp import web
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
@@ -866,45 +864,26 @@ def main():
     # Add error handler
     application.add_error_handler(error_handler)
     
-    async def health_check(request):
-        """Health check endpoint - shows when visiting Render URL"""
-        return web.Response(
-            text="✅ Bot is running! Use @YourBotName on Telegram.",
-            content_type='text/plain'
-        )
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b'✅ Bot is active! Use @YourBotName on Telegram.')
     
-    async def run_bot_and_server():
-        """Run both health server and Telegram bot together"""
-        # Start health server
-        health_app = web.Application()
-        health_app.router.add_get('/', health_check)
-        health_app.router.add_get('/health', health_check)
-        
-        runner = web.AppRunner(health_app)
-        await runner.setup()
-        
-        port = int(os.environ.get('PORT', 10000))
-        site = web.TCPSite(runner, '0.0.0.0', port)
-        await site.start()
-        logger.info(f"✅ Health server running on port {port}")
-        
-        # Start the Telegram bot
-        await application.initialize()
-        await application.start()
-        
-        logger.info("🤖 Bot is running and ready!")
-        
-        # Run forever
-        await asyncio.Event().wait()
-    
-    # Start everything
-    try:
-        logger.info("🚀 Starting bot with health server...")
-        asyncio.run(run_bot_and_server())
-    except KeyboardInterrupt:
-        logger.info("👋 Bot stopped by user")
-    except Exception as e:
-        logger.error(f"❌ Failed to start: {e}")
+    def log_message(self, format, *args):
+        # Disable logging
+        pass
+
+def start_health_server():
+    """Start a simple HTTP server for health checks"""
+    port = int(os.environ.get('PORT', 10000))
+    server = HTTPServer(('0.0.0.0', port), HealthHandler)
+    logger.info(f"🌐 Health server started on port {port}")
+    server.serve_forever()
 
 if __name__ == '__main__':
     main()
