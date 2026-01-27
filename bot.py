@@ -866,7 +866,9 @@ def main():
 
     # Start the bot with webhook
     logger.info("🤖 URL Shortener Bot starting...")
-    
+
+    is_render = 'RENDER' in os.environ
+
     if is_render:
         # Use webhook for Render
         logger.info("🚀 Running in Render mode (webhook)")
