@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import requests
 import qrcode
 from io import BytesIO
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
@@ -864,52 +866,31 @@ def main():
     # Add error handler
     application.add_error_handler(error_handler)
 
-    # Start the bot with webhook
-    logger.info("🤖 URL Shortener Bot starting...")
+    class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b'Bot is alive!')
+    
+    def log_message(self, format, *args):
+        pass  # Silence logs
 
-    is_render = 'RENDER' in os.environ
+def run_health_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), HealthHandler)
+    print(f"✅ Health server on port {port}")
+    server.serve_forever()
 
-    if is_render:
-        logger.info("🚀 Running in Render mode (webhook)")
-        port = int(os.environ.get('PORT', 10000))
-        webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
-        
-        if webhook_url:
-            webhook_url = f"{webhook_url}/{TOKEN}"
-            logger.info(f"🌐 Webhook URL: {webhook_url}")
-            
-            # ====== ADD THIS: Set up simple response handler ======
-            import http.server
-            import socketserver
-            import threading
-            
-            class DualHandler(http.server.BaseHTTPRequestHandler):
-                def do_GET(self):
-                    if self.path == '/':
-                        self.send_response(200)
-                        self.send_header('Content-type', 'text/plain')
-                        self.end_headers()
-                        self.wfile.write(b'Bot is active!')
-                    else:
-                        self.send_response(404)
-                        self.end_headers()
-                
-                def log_message(self, format, *args):
-                    pass
-            
-            def run_health_server():
-                with socketserver.TCPServer(("0.0.0.0", port), DualHandler) as httpd:
-                    logger.info(f"✅ Serving on port {port}")
-                    httpd.serve_forever()
-            
-            # Start in separate thread
-            import threading
-            server_thread = threading.Thread(target=run_health_server, daemon=True)
-            server_thread.start()
-            # ====== END OF ADDITION ======
-            
-            # Start bot (it will fail to bind to port - so DON'T use this approach)
-            # application.run_webhook(...)  # This will fail!
+# Start health server
+health_thread = threading.Thread(target=run_health_server, daemon=True)
+health_thread.start()
+
+    # Start bot with polling
+    application.run_polling(
+        drop_pending_updates=True,
+        allowed_updates=Update.ALL_TYPES
+    )
 
 if __name__ == '__main__':
     main()
