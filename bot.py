@@ -872,7 +872,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(b'✅ Bot is active! Use @YourBotName on Telegram.')
+        self.wfile.write(b'Bot is active! Use @YourBotName on Telegram.')
     
     def log_message(self, format, *args):
         # Disable logging
