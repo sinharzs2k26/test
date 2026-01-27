@@ -9,7 +9,7 @@ import requests
 import qrcode
 from io import BytesIO
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, CallbackContext, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
 # Load environment variables
 load_dotenv()
@@ -870,32 +870,46 @@ def main():
     is_render = 'RENDER' in os.environ
 
     if is_render:
-        # Use webhook for Render
         logger.info("🚀 Running in Render mode (webhook)")
         port = int(os.environ.get('PORT', 10000))
-        
-        # Get webhook URL
         webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
+        
         if webhook_url:
             webhook_url = f"{webhook_url}/{TOKEN}"
             logger.info(f"🌐 Webhook URL: {webhook_url}")
             
-            # Set custom handler for root path
-            async def health_check(update: Update, context: CallbackContext):
-                """Handle requests to root path"""
-                await update.message.reply_text("✅ Bot is running!")
+            # ====== ADD THIS: Set up simple response handler ======
+            import http.server
+            import socketserver
+            import threading
             
-            # Add a special handler for root path messages (not really needed)
+            class DualHandler(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    if self.path == '/':
+                        self.send_response(200)
+                        self.send_header('Content-type', 'text/plain')
+                        self.end_headers()
+                        self.wfile.write(b'✅ Bot is active!')
+                    else:
+                        self.send_response(404)
+                        self.end_headers()
+                
+                def log_message(self, format, *args):
+                    pass
             
-            # Start webhook
-            application.run_webhook(
-                listen="0.0.0.0",
-                port=port,
-                url_path=TOKEN,  # Webhook listens on /TOKEN path
-                webhook_url=webhook_url,
-                drop_pending_updates=True,
-                allowed_updates=Update.ALL_TYPES
-            )
+            def run_health_server():
+                with socketserver.TCPServer(("0.0.0.0", port), DualHandler) as httpd:
+                    logger.info(f"✅ Serving on port {port}")
+                    httpd.serve_forever()
+            
+            # Start in separate thread
+            import threading
+            server_thread = threading.Thread(target=run_health_server, daemon=True)
+            server_thread.start()
+            # ====== END OF ADDITION ======
+            
+            # Start bot (it will fail to bind to port - so DON'T use this approach)
+            # application.run_webhook(...)  # This will fail!
 
 if __name__ == '__main__':
     main()
