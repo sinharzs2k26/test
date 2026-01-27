@@ -25,7 +25,6 @@ def start_health_server():
     """Start a simple HTTP server for health checks"""
     port = int(os.getenv('PORT', 10000))
     server = HTTPServer(('0.0.0.0', port), HealthHandler)
-    logger.info(f"🌐 Health server started on port {port}")
     server.serve_forever()
     
 def main():
@@ -41,14 +40,11 @@ def main():
     health_thread.start()
     
     # Start the bot
-    logger.info("🤖 Bot starting...")
-    
     # Check if running on Render
     is_render = 'RENDER' in os.environ
     
     if is_render:
         # Use webhook for Render
-        logger.info("🚀 Running in Render mode (webhook)")
         port = int(os.getenv('PORT', 10000))
         
         # Get webhook URL
@@ -56,8 +52,6 @@ def main():
         if webhook_url:
             # Set webhook URL with token
             webhook_url = f"{webhook_url}/{TOKEN}"
-            logger.info(f"🌐 Webhook URL: {webhook_url}")
-            
             # Start webhook
             application.run_webhook(
                 listen="0.0.0.0",
@@ -68,14 +62,12 @@ def main():
                 allowed_updates=Update.ALL_TYPES
             )
         else:
-            logger.warning("⚠️ No RENDER_EXTERNAL_URL found, falling back to polling")
             application.run_polling(
                 drop_pending_updates=True,
                 allowed_updates=Update.ALL_TYPES
             )
     else:
         # Use polling for local development
-        logger.info("💻 Running in local mode (polling)")
         application.run_polling(
             drop_pending_updates=True,
             allowed_updates=Update.ALL_TYPES
