@@ -15,30 +15,29 @@ def main():
     """Start the bot"""
     # Create the Application
     application = Application.builder().token(TOKEN).build()
-    
+
     # Add command handler
     application.add_handler(CommandHandler("start", start_command))
-    
-    class HealthHandler(BaseHTTPRequestHandler):
+
+    class SimpleHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
-            self.wfile.write(b'Bot is alive!')
+            self.wfile.write(b'✅ Bot is active!')
         
         def log_message(self, format, *args):
-            pass  # Silence logs
+            pass
     
     def run_health_server():
-        port = int(os.environ.get("PORT", 8080))
-        server = HTTPServer(('0.0.0.0', port), HealthHandler)
-        print(f"✅ Health server on port {port}")
-        server.serve_forever()
+        port = int(os.environ.get('PORT', 10000))
+        httpd = HTTPServer(('0.0.0.0', port), SimpleHandler)
+        logger.info(f"✅ Health server on port {port}")
+        httpd.serve_forever()
     
-    # Start health server
-    health_thread = threading.Thread(target=run_health_server, daemon=True)
-    health_thread.start()
-    
+    server_thread = threading.Thread(target=run_health_server, daemon=True)
+    server_thread.start()
+
     # Start the bot
     print("Bot is starting...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
